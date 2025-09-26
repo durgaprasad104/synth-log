@@ -16,11 +16,20 @@ interface AddToolModalProps {
 }
 
 const CATEGORIES = [
-  'Text Generation',
-  'Image Generation',
-  'Code Assistant',
-  'Video & Audio',
-  'Productivity'
+  "Text Generation",
+  "Image Generation",
+  "Code Assistant",
+  "Video & Audio",
+  "Productivity",
+  "Speech Recognition",
+  "3D Design",
+  "Chatbots",
+  "SEO",
+  "Translation",
+  "Health & Wellness",
+  "Business Tools",
+  "Education",
+  "Writing Assistant"
 ];
 
 const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModalProps) => {

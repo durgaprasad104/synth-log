@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { ExternalLink, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StarRating from "./StarRating";
+import PasswordModal from "./PasswordModal";  // Import password modal
 import { Tool } from "../types/Tool";
-import ToolActionButton from "./ToolActionButton";
 
 interface ToolCardProps {
   tool: Tool;
@@ -11,18 +12,38 @@ interface ToolCardProps {
 }
 
 const ToolCard = ({ tool, onEdit, onDelete }: ToolCardProps) => {
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
+
   const handleVisitTool = () => {
     window.open(tool.url, '_blank');
   };
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit(tool);
+  // Open password modal and set the action to perform on successful password
+  const openPasswordModal = (action: () => void) => {
+    setPendingAction(() => action);
+    setPwOpen(true);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  // Handle password submission
+  const handlePasswordSubmit = (entered: string) => {
+    setPwOpen(false);
+    if (entered === "durgaprasad" && pendingAction) {
+      pendingAction();
+    } else {
+      alert("Incorrect password!");
+    }
+  };
+
+  // Wrappers for edit/delete to open password modal first
+  const handleEditProtected = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(tool.id);
+    openPasswordModal(() => onEdit(tool));
+  };
+
+  const handleDeleteProtected = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    openPasswordModal(() => onDelete(tool.id));
   };
 
   return (
@@ -30,6 +51,7 @@ const ToolCard = ({ tool, onEdit, onDelete }: ToolCardProps) => {
                    transition-all duration-300 ease-out
                    hover:bg-card-hover hover:shadow-card-hover hover:-translate-y-1
                    relative overflow-hidden">
+
       {/* Glow effect on hover */}
       <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       
@@ -63,7 +85,7 @@ const ToolCard = ({ tool, onEdit, onDelete }: ToolCardProps) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleEdit}
+            onClick={handleEditProtected}
             className="flex-1"
           >
             <Edit2 className="w-3 h-3 mr-2" />
@@ -72,7 +94,7 @@ const ToolCard = ({ tool, onEdit, onDelete }: ToolCardProps) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleDelete}
+            onClick={handleDeleteProtected}
             className="flex-1 text-destructive hover:text-destructive"
           >
             <Trash2 className="w-3 h-3 mr-2" />
@@ -80,6 +102,12 @@ const ToolCard = ({ tool, onEdit, onDelete }: ToolCardProps) => {
           </Button>
         </div>
       </div>
+
+      <PasswordModal
+        open={pwOpen}
+        onClose={() => setPwOpen(false)}
+        onSubmit={handlePasswordSubmit}
+      />
     </div>
   );
 };

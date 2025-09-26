@@ -2,6 +2,7 @@ import { ExternalLink, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StarRating from "./StarRating";
 import { Tool } from "../types/Tool";
+import ToolActionButton from "./ToolActionButton";
 
 interface ToolCardProps {
   tool: Tool;

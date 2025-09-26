@@ -29,7 +29,8 @@ const CATEGORIES = [
   "Health & Wellness",
   "Business Tools",
   "Education",
-  "Writing Assistant"
+  "Writing Assistant",
+  "Other"  // Added Other for manual input
 ];
 
 const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModalProps) => {
@@ -40,6 +41,8 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
     rating: 0
   });
 
+  const [customCategory, setCustomCategory] = useState("");  // State for manual category
+
   // Password modal state
   const [pwOpen, setPwOpen] = useState(false);
 
@@ -48,11 +51,13 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
       setFormData({
         name: editingTool.name,
         url: editingTool.url,
-        category: editingTool.category,
+        category: CATEGORIES.includes(editingTool.category) ? editingTool.category : "Other",
         rating: editingTool.rating
       });
+      setCustomCategory(!CATEGORIES.includes(editingTool.category) ? editingTool.category : "");
     } else {
       setFormData({ name: '', url: '', category: '', rating: 0 });
+      setCustomCategory("");
     }
   }, [editingTool, isOpen]);
 
@@ -65,6 +70,7 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
       onSaveTool(pendingFormData);
       setPendingFormData(null);
       setFormData({ name: '', url: '', category: '', rating: 0 });
+      setCustomCategory("");
       onClose();
     } else {
       alert("Incorrect password!");
@@ -78,8 +84,14 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
       return;
     }
 
-    // Instead of calling onSaveTool directly, open password modal first
-    setPendingFormData(formData);
+    // Determine which category to use - custom if "Other" is selected
+    const categoryToSave = formData.category === "Other" && customCategory ? customCategory : formData.category;
+
+    // Prepare form data with proper category
+    const dataToSave = { ...formData, category: categoryToSave };
+
+    // Open password modal with data
+    setPendingFormData(dataToSave);
     setPwOpen(true);
   };
 
@@ -115,7 +127,7 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* form fields unchanged */}
+            {/* Tool Name */}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-card-foreground font-medium">
                 Tool Name
@@ -131,6 +143,7 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
               />
             </div>
 
+            {/* URL */}
             <div className="space-y-2">
               <Label htmlFor="url" className="text-card-foreground font-medium">
                 URL
@@ -146,13 +159,17 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
               />
             </div>
 
+            {/* Category */}
             <div className="space-y-2">
               <Label htmlFor="category" className="text-card-foreground font-medium">
                 Category
               </Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, category: value }));
+                  if (value !== "Other") setCustomCategory("");
+                }}
                 required
               >
                 <SelectTrigger className="bg-input border-input-border focus:border-input-focus text-card-foreground">
@@ -166,8 +183,21 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Show input for custom category when "Other" is selected */}
+              {formData.category === "Other" && (
+                <Input
+                  type="text"
+                  placeholder="Enter custom category"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                  className="mt-2"
+                  required
+                />
+              )}
             </div>
 
+            {/* Rating */}
             <div className="space-y-2">
               <Label className="text-card-foreground font-medium">Rating</Label>
               <div className="flex items-center gap-3">
@@ -183,6 +213,7 @@ const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModal
               </div>
             </div>
 
+            {/* Buttons */}
             <div className="flex gap-3 pt-4">
               <Button
                 type="button"

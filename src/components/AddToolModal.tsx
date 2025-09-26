@@ -16,6 +16,7 @@ interface AddToolModalProps {
 }
 
 const CATEGORIES = [
+  "               ",
   "Text Generation",
   "Image Generation",
   "Code Assistant",

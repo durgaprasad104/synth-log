@@ -1,5 +1,5 @@
-// PasswordModal.tsx
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function PasswordModal({ open, onClose, onSubmit }: {
   open: boolean;
@@ -7,37 +7,44 @@ export default function PasswordModal({ open, onClose, onSubmit }: {
   onSubmit: (password: string) => void;
 }) {
   const [password, setPassword] = useState("");
-  return open ? (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-4 rounded">
-        <h2>Enter Password</h2>
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
+      <div className="bg-[#15181d] rounded-lg shadow-lg p-6 w-full max-w-xs flex flex-col items-center">
+        <h2 className="text-lg font-semibold text-white mb-4">Enter Password</h2>
         <input
           type="password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="border p-1 mt-2"
+          className="w-full px-3 py-2 bg-[#292d36] text-white rounded border border-gray-700 mb-4"
+          placeholder="Password"
+          autoFocus
         />
-        <div className="flex mt-4">
-          <button
-            className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+        <div className="flex w-full gap-2">
+          <Button
+            className="flex-1"
+            variant="outline"
             onClick={() => {
               onSubmit(password);
               setPassword("");
             }}
           >
             Submit
-          </button>
-          <button
-            className="bg-gray-300 px-3 py-1 rounded"
+          </Button>
+          <Button
+            className="flex-1"
+            variant="destructive"
             onClick={() => {
               setPassword("");
               onClose();
             }}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
-  ) : null;
+  );
 }

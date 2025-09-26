@@ -1,24 +1,47 @@
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, X, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StarRating from "./StarRating";
 import { Tool } from "../types/Tool";
 
 interface AddToolModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTool: (tool: Omit<Tool, 'id' | 'dateAdded'>) => void;
+  onSaveTool: (tool: Omit<Tool, 'id' | 'dateAdded'>) => void;
+  editingTool?: Tool | null;
 }
 
-const AddToolModal = ({ isOpen, onClose, onAddTool }: AddToolModalProps) => {
+const CATEGORIES = [
+  'Text Generation',
+  'Image Generation', 
+  'Code Assistant',
+  'Video & Audio',
+  'Productivity'
+];
+
+const AddToolModal = ({ isOpen, onClose, onSaveTool, editingTool }: AddToolModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     url: '',
     category: '',
     rating: 0
   });
+
+  useEffect(() => {
+    if (editingTool) {
+      setFormData({
+        name: editingTool.name,
+        url: editingTool.url,
+        category: editingTool.category,
+        rating: editingTool.rating
+      });
+    } else {
+      setFormData({ name: '', url: '', category: '', rating: 0 });
+    }
+  }, [editingTool, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +50,7 @@ const AddToolModal = ({ isOpen, onClose, onAddTool }: AddToolModalProps) => {
       return;
     }
 
-    onAddTool(formData);
+    onSaveTool(formData);
     setFormData({ name: '', url: '', category: '', rating: 0 });
     onClose();
   };
@@ -49,7 +72,9 @@ const AddToolModal = ({ isOpen, onClose, onAddTool }: AddToolModalProps) => {
       {/* Modal */}
       <div className="relative bg-card border border-card-border rounded-xl p-6 w-full max-w-md shadow-card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-card-foreground">Add New AI Tool</h2>
+          <h2 className="text-xl font-semibold text-card-foreground">
+            {editingTool ? 'Edit AI Tool' : 'Add New AI Tool'}
+          </h2>
           <Button
             variant="ghost"
             size="sm"
@@ -95,15 +120,22 @@ const AddToolModal = ({ isOpen, onClose, onAddTool }: AddToolModalProps) => {
             <Label htmlFor="category" className="text-card-foreground font-medium">
               Category
             </Label>
-            <Input
-              id="category"
-              type="text"
-              placeholder="e.g., Text Generation, Image AI, etc."
+            <Select
               value={formData.category}
-              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              className="bg-input border-input-border focus:border-input-focus text-card-foreground"
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
               required
-            />
+            >
+              <SelectTrigger className="bg-input border-input-border focus:border-input-focus text-card-foreground">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -134,8 +166,17 @@ const AddToolModal = ({ isOpen, onClose, onAddTool }: AddToolModalProps) => {
               type="submit"
               className="flex-1 bg-gradient-primary hover:shadow-glow transition-all duration-300"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Tool
+              {editingTool ? (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Tool
+                </>
+              )}
             </Button>
           </div>
         </form>

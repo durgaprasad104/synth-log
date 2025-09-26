@@ -12,6 +12,7 @@ const Index = () => {
   const [tools, setTools] = useState<Tool[]>([]);
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTool, setEditingTool] = useState<Tool | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -50,23 +51,69 @@ const Index = () => {
     setFilteredTools(filtered);
   }, [tools, searchQuery, categoryFilter, ratingFilter]);
 
-  const handleAddTool = (toolData: Omit<Tool, 'id' | 'dateAdded'>) => {
+  const handleSaveTool = (toolData: Omit<Tool, 'id' | 'dateAdded'>) => {
     try {
-      const newTool = toolService.addTool(toolData);
-      const updatedTools = toolService.getTools();
-      setTools(updatedTools);
-      
-      toast({
-        title: "Tool Added!",
-        description: `${newTool.name} has been added to your discovery log.`,
-      });
+      if (editingTool) {
+        // Update existing tool
+        const updatedTool = toolService.updateTool(editingTool.id, toolData);
+        if (updatedTool) {
+          const updatedTools = toolService.getTools();
+          setTools(updatedTools);
+          toast({
+            title: "Tool Updated!",
+            description: `${updatedTool.name} has been updated.`,
+          });
+        }
+      } else {
+        // Add new tool
+        const newTool = toolService.addTool(toolData);
+        const updatedTools = toolService.getTools();
+        setTools(updatedTools);
+        toast({
+          title: "Tool Added!",
+          description: `${newTool.name} has been added to your discovery log.`,
+        });
+      }
+      setEditingTool(null);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add tool. Please try again.",
+        description: "Failed to save tool. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditTool = (tool: Tool) => {
+    setEditingTool(tool);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteTool = (id: string) => {
+    if (confirm("Are you sure you want to delete this tool?")) {
+      try {
+        const success = toolService.deleteTool(id);
+        if (success) {
+          const updatedTools = toolService.getTools();
+          setTools(updatedTools);
+          toast({
+            title: "Tool Deleted!",
+            description: "The tool has been removed from your discovery log.",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete tool. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleAddNewTool = () => {
+    setEditingTool(null);
+    setIsModalOpen(true);
   };
 
   const categories = toolService.getCategories();
@@ -90,7 +137,7 @@ const Index = () => {
             </div>
             
             <Button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleAddNewTool}
               className="bg-gradient-primary hover:shadow-glow transition-all duration-300 
                          w-full md:w-auto"
             >
@@ -125,7 +172,12 @@ const Index = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredTools.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
+                <ToolCard 
+                  key={tool.id} 
+                  tool={tool} 
+                  onEdit={handleEditTool}
+                  onDelete={handleDeleteTool}
+                />
               ))}
             </div>
           </>
@@ -145,7 +197,7 @@ const Index = () => {
                 : "Start building your AI tool collection by adding your first discovery!"}
             </p>
             <Button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleAddNewTool}
               className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -158,8 +210,12 @@ const Index = () => {
       {/* Add Tool Modal */}
       <AddToolModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddTool={handleAddTool}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTool(null);
+        }}
+        onSaveTool={handleSaveTool}
+        editingTool={editingTool}
       />
     </div>
   );

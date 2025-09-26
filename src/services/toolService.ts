@@ -45,6 +45,35 @@ export const toolService = {
     return Array.from(categories).sort();
   },
 
+  // Update an existing tool
+  updateTool: (id: string, toolData: Omit<Tool, 'id' | 'dateAdded'>): Tool | null => {
+    const tools = toolService.getTools();
+    const toolIndex = tools.findIndex(tool => tool.id === id);
+    
+    if (toolIndex === -1) return null;
+    
+    const updatedTool: Tool = {
+      ...tools[toolIndex],
+      ...toolData,
+    };
+    
+    tools[toolIndex] = updatedTool;
+    toolService.saveTools(tools);
+    
+    return updatedTool;
+  },
+
+  // Delete a tool
+  deleteTool: (id: string): boolean => {
+    const tools = toolService.getTools();
+    const filteredTools = tools.filter(tool => tool.id !== id);
+    
+    if (filteredTools.length === tools.length) return false;
+    
+    toolService.saveTools(filteredTools);
+    return true;
+  },
+
   // Initialize with sample data if empty
   initSampleData: (): void => {
     const tools = toolService.getTools();

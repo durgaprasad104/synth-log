@@ -6,7 +6,7 @@ import ToolCard from "../components/ToolCard";
 import SearchAndFilter from "../components/SearchAndFilter";
 import AddToolModal from "../components/AddToolModal";
 import { Tool } from "../types/Tool";
-import { toolService } from "../services/toolService";
+import { fetchTools, addTool, updateTool, deleteTool } from "../firebaseTools";
 
 const Index = () => {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -18,63 +18,62 @@ const Index = () => {
   const [ratingFilter, setRatingFilter] = useState("all");
   const { toast } = useToast();
 
-  // Load tools on component mount
   useEffect(() => {
-    toolService.initSampleData();
-    const loadedTools = toolService.getTools();
-    setTools(loadedTools);
-    setFilteredTools(loadedTools);
-  }, []);
+    (async () => {
+      try {
+        const allTools = await fetchTools();
+        setTools(allTools);
+        setFilteredTools(allTools);
+      } catch (error) {
+        toast({
+          title: "Error loading tools",
+          description: "Could not load AI tools from database.",
+          variant: "destructive",
+        });
+      }
+    })();
+  }, [toast]);
 
-  // Filter tools based on search and filters
   useEffect(() => {
     let filtered = tools;
 
-    // Search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(tool =>
         tool.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Category filter
     if (categoryFilter !== "all") {
       filtered = filtered.filter(tool => tool.category === categoryFilter);
     }
 
-    // Rating filter
     if (ratingFilter !== "all") {
-      const minRating = parseInt(ratingFilter);
+      const minRating = parseInt(ratingFilter, 10);
       filtered = filtered.filter(tool => tool.rating >= minRating);
     }
 
     setFilteredTools(filtered);
   }, [tools, searchQuery, categoryFilter, ratingFilter]);
 
-  const handleSaveTool = (toolData: Omit<Tool, 'id' | 'dateAdded'>) => {
+  const handleSaveTool = async (toolData: Omit<Tool, "id" | "dateAdded">) => {
     try {
       if (editingTool) {
-        // Update existing tool
-        const updatedTool = toolService.updateTool(editingTool.id, toolData);
-        if (updatedTool) {
-          const updatedTools = toolService.getTools();
-          setTools(updatedTools);
-          toast({
-            title: "Tool Updated!",
-            description: `${updatedTool.name} has been updated.`,
-          });
-        }
+        await updateTool(editingTool.id, toolData);
+        toast({
+          title: "Tool Updated!",
+          description: `${editingTool.name} has been updated.`,
+        });
       } else {
-        // Add new tool
-        const newTool = toolService.addTool(toolData);
-        const updatedTools = toolService.getTools();
-        setTools(updatedTools);
+        await addTool(toolData);
         toast({
           title: "Tool Added!",
-          description: `${newTool.name} has been added to your discovery log.`,
+          description: `${toolData.name} has been added.`,
         });
       }
+      const updatedTools = await fetchTools();
+      setTools(updatedTools);
       setEditingTool(null);
+      setIsModalOpen(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -89,18 +88,16 @@ const Index = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteTool = (id: string) => {
+  const handleDeleteTool = async (id: string) => {
     if (confirm("Are you sure you want to delete this tool?")) {
       try {
-        const success = toolService.deleteTool(id);
-        if (success) {
-          const updatedTools = toolService.getTools();
-          setTools(updatedTools);
-          toast({
-            title: "Tool Deleted!",
-            description: "The tool has been removed from your discovery log.",
-          });
-        }
+        await deleteTool(id);
+        const updatedTools = await fetchTools();
+        setTools(updatedTools);
+        toast({
+          title: "Tool Deleted!",
+          description: "The tool has been removed.",
+        });
       } catch (error) {
         toast({
           title: "Error",
@@ -116,11 +113,11 @@ const Index = () => {
     setIsModalOpen(true);
   };
 
-  const categories = toolService.getCategories();
+  // Derive unique categories for filter dropdown
+  const categories = Array.from(new Set(tools.map(t => t.category))).sort();
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-card-border">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -135,11 +132,9 @@ const Index = () => {
                 Discover, rate, and organize your favorite AI tools
               </p>
             </div>
-            
             <Button
               onClick={handleAddNewTool}
-              className="bg-gradient-primary hover:shadow-glow transition-all duration-300 
-                         w-full md:w-auto"
+              className="bg-gradient-primary hover:shadow-glow transition-all duration-300 w-full md:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add New Tool
@@ -148,9 +143,7 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Search and Filters */}
         <SearchAndFilter
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -161,7 +154,6 @@ const Index = () => {
           categories={categories}
         />
 
-        {/* Tools Grid */}
         {filteredTools.length > 0 ? (
           <>
             <div className="flex items-center justify-between mb-6">
@@ -169,12 +161,12 @@ const Index = () => {
                 Your AI Tools ({filteredTools.length})
               </h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredTools.map((tool) => (
-                <ToolCard 
-                  key={tool.id} 
-                  tool={tool} 
+              {filteredTools.map(tool => (
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
                   onEdit={handleEditTool}
                   onDelete={handleDeleteTool}
                 />
@@ -187,8 +179,8 @@ const Index = () => {
               <Sparkles className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-medium text-card-foreground mb-2">
-              {searchQuery || categoryFilter !== "all" || ratingFilter !== "all" 
-                ? "No tools match your filters" 
+              {searchQuery || categoryFilter !== "all" || ratingFilter !== "all"
+                ? "No tools match your filters"
                 : "No AI tools yet"}
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -207,7 +199,6 @@ const Index = () => {
         )}
       </main>
 
-      {/* Add Tool Modal */}
       <AddToolModal
         isOpen={isModalOpen}
         onClose={() => {
